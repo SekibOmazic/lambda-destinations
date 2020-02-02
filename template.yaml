@@ -1,0 +1,59 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  lambda-destinations
+
+  Sample SAM Template for lambda-destinations
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+  # SNS Topic to receive a message on failed Lambda execution
+  OnFailureDestinationSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: "OnFailureDestinationSNSTopic"
+
+  SnsSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: <YOUR.EMAIL@ADDRESS.COM>
+      Protocol: email
+      TopicArn: !Ref OnFailureDestinationSNSTopic
+
+  # SQS Queue to receive a message on successful Lambda execution
+  OnSuccessDestinationSQSQueue:
+    Type: AWS::SQS::Queue
+
+  # Lambda
+  AgeCheckFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: check-age/
+      Handler: app.lambdaHandler
+      Runtime: nodejs12.x
+      Policies: # Allow Lambda function to access SQS and SNS resources
+        - AmazonSQSFullAccess
+        - AmazonSNSFullAccess
+
+  # Configure Destinations for the Lambda function
+  EventInvokeConfig:
+    Type: AWS::Lambda::EventInvokeConfig
+    Properties:
+      FunctionName: !Ref AgeCheckFunction
+      Qualifier: "$LATEST"
+      MaximumEventAgeInSeconds: 60
+      MaximumRetryAttempts: 0
+      DestinationConfig:
+        OnFailure:
+          Destination: !Ref OnFailureDestinationSNSTopic
+        OnSuccess:
+          Destination: !GetAtt OnSuccessDestinationSQSQueue.Arn
+
+Outputs:
+  Region:
+    Description: "Region"
+    Value: !Ref AWS::Region

@@ -1,0 +1,11 @@
+{
+  "name": "check_age",
+  "version": "1.0.0",
+  "description": "Simple Lambda to check event payload",
+  "main": "app.js",
+  "repository": "https://github.com/SekibOmazic/lambda-destinations",
+  "author": "SAM CLI",
+  "license": "MIT",
+  "dependencies": {},
+  "scripts": {}
+}
